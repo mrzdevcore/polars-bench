@@ -1,11 +1,11 @@
-import json
-
+import polars as pl
 import torch
 from fastapi import FastAPI
 from pydantic import BaseModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 MODEL_NAME = "Qwen/Qwen2.5-Coder-3B-Instruct"
+MAX_NEW_TOKENS = 768
 
 app = FastAPI()
 
@@ -37,6 +37,31 @@ def strip_code_fence(text: str) -> str:
     return text
 
 
+def _read_schema(file_name: str, fmt: str) -> dict[str, str] | None:
+    try:
+        if fmt == "csv":
+            schema = pl.scan_csv(file_name).collect_schema()
+        else:
+            schema = pl.read_parquet_schema(file_name)
+        return {col: str(dtype) for col, dtype in schema.items()}
+    except Exception:
+        return None
+
+
+def build_schema_block(tables: dict) -> str:
+    lines = []
+    for name, meta in tables.items():
+        file_name = meta["file_name"]
+        fmt = meta.get("format", "parquet")
+        schema = _read_schema(file_name, fmt)
+        if schema is None:
+            lines.append(f"- {name}: columns unknown (file: {file_name})")
+            continue
+        cols = ", ".join(f"{col} ({dtype})" for col, dtype in schema.items())
+        lines.append(f"- {name}: {cols}")
+    return "\n".join(lines)
+
+
 @app.get("/")
 def health():
     return {"status": "ok"}
@@ -45,20 +70,23 @@ def health():
 @app.post("/chat", response_model=ChatResponse)
 @torch.inference_mode()
 def chat(payload: ChatRequest) -> ChatResponse:
+    schema_block = build_schema_block(payload.tables)
+
+    system_prompt = (
+        "You write Python code using Polars to answer questions about DataFrames.\n\n"
+        "The following DataFrames are ALREADY LOADED as variables with these columns. "
+        "Use them directly — do NOT call pl.read_parquet or pl.read_csv:\n\n"
+        f"{schema_block}\n\n"
+        "Rules:\n"
+        "- Use only the variable names and column names listed above.\n"
+        "- Do not invent columns or rename tables.\n"
+        "- Assign the final Polars DataFrame to a variable named `result`.\n"
+        "- Return only the Python code. No markdown fences, no explanation."
+    )
+
     messages = [
-        {
-            "role": "system",
-            "content": (
-                "Return only valid Python Polars code. "
-                "No markdown fences. "
-                "Assign the final Polars DataFrame to result. "
-                f"Available datasets: {json.dumps(payload.tables, ensure_ascii=False)}"
-            ),
-        },
-        {
-            "role": "user",
-            "content": payload.message,
-        },
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": payload.message},
     ]
 
     text = tokenizer.apply_chat_template(
@@ -71,7 +99,7 @@ def chat(payload: ChatRequest) -> ChatResponse:
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=256,
+        max_new_tokens=MAX_NEW_TOKENS,
         do_sample=False,
         pad_token_id=tokenizer.eos_token_id,
         eos_token_id=tokenizer.eos_token_id,
