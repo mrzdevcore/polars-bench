@@ -3,3 +3,9 @@ torch
 transformers
 uvicorn
 accelerate
+accelerate
+fastapi
+pydantic
+torch
+transformers
+uvicorn
