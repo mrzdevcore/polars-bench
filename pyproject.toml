@@ -1,0 +1,13 @@
+[project]
+name = "submission"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.12"
+dependencies = [
+    "accelerate>=1.13.0",
+    "fastapi>=0.135.1",
+    "torch>=2.8.0",
+    "transformers>=5.3.0",
+    "uvicorn>=0.42.0",
+]
