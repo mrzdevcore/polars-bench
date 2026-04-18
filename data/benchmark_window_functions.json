@@ -1,0 +1,169 @@
+{
+  "questions": [
+    {
+      "id": "WIN01",
+      "question": "For each order, rank products by revenue (unit_price * quantity) descending within the order.",
+      "datasets": {
+        "nw_order_details": {
+          "file_name": "data/nw_order_details.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_order_details.with_columns((pl.col(\"unit_price\") * pl.col(\"quantity\")).alias(\"revenue\")).with_columns(pl.col(\"revenue\").rank(method=\"dense\", descending=True).over(\"order_id\").alias(\"rank_in_order\"))"
+    },
+    {
+      "id": "WIN02",
+      "question": "For each customer, compute a running total of payments ordered by payment_date.",
+      "datasets": {
+        "sk_payments": {
+          "file_name": "data/sk_payments.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_payments.sort(\"payment_date\").with_columns(pl.col(\"amount\").cum_sum().over(\"customer_id\").alias(\"running_total\"))"
+    },
+    {
+      "id": "WIN03",
+      "question": "Rank orders by total price within each customer (most expensive first).",
+      "datasets": {
+        "tpch_orders": {
+          "file_name": "data/tpch_orders.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_orders.with_columns(pl.col(\"o_totalprice\").rank(method=\"dense\", descending=True).over(\"o_custkey\").alias(\"price_rank\"))"
+    },
+    {
+      "id": "WIN04",
+      "question": "For each order, compute the difference in days between this order and the customer's previous order.",
+      "datasets": {
+        "nw_orders": {
+          "file_name": "data/nw_orders.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_orders.sort(\"customer_id\", \"order_date\").with_columns((pl.col(\"order_date\").str.to_date() - pl.col(\"order_date\").str.to_date().shift(1).over(\"customer_id\")).dt.total_days().alias(\"days_since_prev\"))"
+    },
+    {
+      "id": "WIN05",
+      "question": "For each customer, compute the percentage of total spending each payment represents.",
+      "datasets": {
+        "sk_payments": {
+          "file_name": "data/sk_payments.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_payments.with_columns((pl.col(\"amount\") / pl.col(\"amount\").sum().over(\"customer_id\") * 100).round(2).alias(\"pct_of_total\"))"
+    },
+    {
+      "id": "WIN06",
+      "question": "For each order, compute the cumulative sum of l_extendedprice per line number.",
+      "datasets": {
+        "tpch_lineitem": {
+          "file_name": "data/tpch_lineitem.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_lineitem.sort(\"l_orderkey\", \"l_linenumber\").with_columns(pl.col(\"l_extendedprice\").cum_sum().over(\"l_orderkey\").alias(\"cum_price\"))"
+    },
+    {
+      "id": "WIN07",
+      "question": "For each customer, number their invoices sequentially by date.",
+      "datasets": {
+        "ck_invoices": {
+          "file_name": "data/ck_invoices.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_invoices.sort(\"invoice_date\").with_columns(pl.col(\"invoice_id\").cum_count().over(\"customer_id\").alias(\"invoice_number\"))"
+    },
+    {
+      "id": "WIN08",
+      "question": "For each product, compute the difference between each order's quantity and the product's average quantity.",
+      "datasets": {
+        "nw_order_details": {
+          "file_name": "data/nw_order_details.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_order_details.with_columns((pl.col(\"quantity\") - pl.col(\"quantity\").mean().over(\"product_id\")).round(2).alias(\"qty_diff_from_avg\"))"
+    },
+    {
+      "id": "WIN09",
+      "question": "Flag the most recent rental per customer (is_latest = True/False).",
+      "datasets": {
+        "sk_rentals": {
+          "file_name": "data/sk_rentals.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_rentals.with_columns((pl.col(\"rental_date\") == pl.col(\"rental_date\").max().over(\"customer_id\")).alias(\"is_latest\"))"
+    },
+    {
+      "id": "WIN10",
+      "question": "For each customer, compute the percent rank of each order by total price.",
+      "datasets": {
+        "tpch_orders": {
+          "file_name": "data/tpch_orders.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_orders.with_columns(pl.col(\"o_totalprice\").rank(method=\"ordinal\").over(\"o_custkey\").alias(\"r\")).with_columns((pl.col(\"r\") / pl.col(\"r\").max().over(\"o_custkey\") * 100).round(1).alias(\"pct_rank\")).drop(\"r\")"
+    },
+    {
+      "id": "WIN11",
+      "question": "Rank cities by population within each country (largest first).",
+      "datasets": {
+        "sp_world_city": {
+          "file_name": "data/sp_world_city.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_world_city.with_columns(pl.col(\"population\").rank(method=\"dense\", descending=True).over(\"country_code\").alias(\"pop_rank\"))"
+    },
+    {
+      "id": "WIN12",
+      "question": "For each invoice, compute the share of each line's revenue (unit_price * quantity) as a percentage of the invoice total.",
+      "datasets": {
+        "ck_invoice_lines": {
+          "file_name": "data/ck_invoice_lines.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_invoice_lines.with_columns((pl.col(\"unit_price\") * pl.col(\"quantity\")).alias(\"line_rev\")).with_columns((pl.col(\"line_rev\") / pl.col(\"line_rev\").sum().over(\"invoice_id\") * 100).round(2).alias(\"pct_of_invoice\"))"
+    },
+    {
+      "id": "WIN13",
+      "question": "For each category, compute the z-score of each product's unit_price: (price - mean) / std.",
+      "datasets": {
+        "nw_products": {
+          "file_name": "data/nw_products.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_products.with_columns(((pl.col(\"unit_price\") - pl.col(\"unit_price\").mean().over(\"category_id\")) / pl.col(\"unit_price\").std().over(\"category_id\")).round(2).alias(\"price_zscore\"))"
+    },
+    {
+      "id": "WIN14",
+      "question": "For each staff member, compute a rolling 3-payment average of amount, ordered by payment_date.",
+      "datasets": {
+        "sk_payments": {
+          "file_name": "data/sk_payments.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_payments.sort(\"staff_id\", \"payment_date\").with_columns(pl.col(\"amount\").rolling_mean(window_size=3).over(\"staff_id\").alias(\"rolling_avg_3\"))"
+    },
+    {
+      "id": "WIN15",
+      "question": "For each supplier, compute the cumulative total of l_extendedprice ordered by l_shipdate.",
+      "datasets": {
+        "tpch_lineitem": {
+          "file_name": "data/tpch_lineitem.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_lineitem.sort(\"l_suppkey\", \"l_shipdate\").with_columns(pl.col(\"l_extendedprice\").cum_sum().over(\"l_suppkey\").alias(\"cum_revenue\"))"
+    }
+  ]
+}

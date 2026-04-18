@@ -2,6 +2,7 @@ accelerate
 fastapi
 polars
 pydantic
+sentence-transformers
 torch
 transformers
 uvicorn

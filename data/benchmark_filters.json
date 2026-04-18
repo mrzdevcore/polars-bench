@@ -1,0 +1,169 @@
+{
+  "questions": [
+    {
+      "id": "FIL01",
+      "question": "Find all products that are discontinued.",
+      "datasets": {
+        "nw_products": {
+          "file_name": "data/nw_products.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_products.filter(pl.col(\"discontinued\"))"
+    },
+    {
+      "id": "FIL02",
+      "question": "Find all R-rated films.",
+      "datasets": {
+        "sk_films": {
+          "file_name": "data/sk_films.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_films.filter(pl.col(\"rating\") == \"R\")"
+    },
+    {
+      "id": "FIL03",
+      "question": "Find all customers in the BUILDING market segment.",
+      "datasets": {
+        "tpch_customer": {
+          "file_name": "data/tpch_customer.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_customer.filter(pl.col(\"c_mktsegment\") == \"BUILDING\")"
+    },
+    {
+      "id": "FIL04",
+      "question": "Find all male singers over 30 years old.",
+      "datasets": {
+        "sp_singer": {
+          "file_name": "data/sp_singer.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_singer.filter(pl.col(\"is_male\") & (pl.col(\"age\") > 30))"
+    },
+    {
+      "id": "FIL05",
+      "question": "Find products with unit_price above 50 that are not discontinued and have stock below reorder level.",
+      "datasets": {
+        "nw_products": {
+          "file_name": "data/nw_products.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_products.filter((pl.col(\"unit_price\") > 50) & ~pl.col(\"discontinued\") & (pl.col(\"units_in_stock\") < pl.col(\"reorder_level\")))"
+    },
+    {
+      "id": "FIL06",
+      "question": "Find films longer than 150 minutes with rental_rate below 2.99 and rating PG or PG-13.",
+      "datasets": {
+        "sk_films": {
+          "file_name": "data/sk_films.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_films.filter((pl.col(\"length_min\") > 150) & (pl.col(\"rental_rate\") < 2.99) & pl.col(\"rating\").is_in([\"PG\", \"PG-13\"]))"
+    },
+    {
+      "id": "FIL07",
+      "question": "Find line items shipped by RAIL or SHIP with discount above 0.05 and quantity above 30.",
+      "datasets": {
+        "tpch_lineitem": {
+          "file_name": "data/tpch_lineitem.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_lineitem.filter(pl.col(\"l_shipmode\").is_in([\"RAIL\", \"SHIP\"]) & (pl.col(\"l_discount\") > 0.05) & (pl.col(\"l_quantity\") > 30))"
+    },
+    {
+      "id": "FIL08",
+      "question": "Find tracks longer than 5 minutes (300000 ms) with no composer (null).",
+      "datasets": {
+        "ck_tracks": {
+          "file_name": "data/ck_tracks.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_tracks.filter((pl.col(\"milliseconds\") > 300000) & pl.col(\"composer\").is_null())"
+    },
+    {
+      "id": "FIL09",
+      "question": "Find orders that have not been shipped yet (shipped_date is null).",
+      "datasets": {
+        "nw_orders": {
+          "file_name": "data/nw_orders.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_orders.filter(pl.col(\"shipped_date\").is_null())"
+    },
+    {
+      "id": "FIL10",
+      "question": "Find rentals that are still outstanding: return_date is null and rental was made before 2024-06-01.",
+      "datasets": {
+        "sk_rentals": {
+          "file_name": "data/sk_rentals.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_rentals.filter(pl.col(\"return_date\").is_null() & (pl.col(\"rental_date\") < \"2024-06-01\"))"
+    },
+    {
+      "id": "FIL11",
+      "question": "TPC-H Q6 filter: shipdate in 2023, discount between 0.05 and 0.07, quantity < 24.",
+      "datasets": {
+        "tpch_lineitem": {
+          "file_name": "data/tpch_lineitem.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_lineitem.filter((pl.col(\"l_shipdate\") >= \"2023-01-01\") & (pl.col(\"l_shipdate\") <= \"2023-12-31\") & pl.col(\"l_discount\").is_between(0.05, 0.07) & (pl.col(\"l_quantity\") < 24))"
+    },
+    {
+      "id": "FIL12",
+      "question": "Find cars with horsepower above 200, mpg above 15, and weight below 3500. Exclude nulls in horsepower.",
+      "datasets": {
+        "sp_car_data": {
+          "file_name": "data/sp_car_data.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_car_data.filter(pl.col(\"horsepower\").is_not_null() & (pl.col(\"horsepower\") > 200) & (pl.col(\"mpg\") > 15) & (pl.col(\"weight\") < 3500))"
+    },
+    {
+      "id": "FIL13",
+      "question": "Find all European countries.",
+      "datasets": {
+        "sp_world_country": {
+          "file_name": "data/sp_world_country.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_world_country.filter(pl.col(\"continent\") == \"Europe\")"
+    },
+    {
+      "id": "FIL14",
+      "question": "Find customers from France, Germany, or Spain who have a fax number (not null).",
+      "datasets": {
+        "nw_customers": {
+          "file_name": "data/nw_customers.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_customers.filter(pl.col(\"country\").is_in([\"France\", \"Germany\", \"Spain\"]) & pl.col(\"fax\").is_not_null())"
+    },
+    {
+      "id": "FIL15",
+      "question": "Find invoices from 2023 with total above 10.",
+      "datasets": {
+        "ck_invoices": {
+          "file_name": "data/ck_invoices.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_invoices.filter(pl.col(\"invoice_date\").str.starts_with(\"2023\") & (pl.col(\"total\") > 10))"
+    }
+  ]
+}

@@ -1,0 +1,169 @@
+{
+  "questions": [
+    {
+      "id": "AGG01",
+      "question": "Count the number of products per category_id.",
+      "datasets": {
+        "nw_products": {
+          "file_name": "data/nw_products.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_products.group_by(\"category_id\").agg(pl.len().alias(\"count\"))"
+    },
+    {
+      "id": "AGG02",
+      "question": "Count the number of films per rating.",
+      "datasets": {
+        "sk_films": {
+          "file_name": "data/sk_films.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_films.group_by(\"rating\").agg(pl.len().alias(\"count\"))"
+    },
+    {
+      "id": "AGG03",
+      "question": "Calculate the total quantity and total extended price across all line items.",
+      "datasets": {
+        "tpch_lineitem": {
+          "file_name": "data/tpch_lineitem.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_lineitem.select(pl.col(\"l_quantity\").sum().alias(\"total_qty\"), pl.col(\"l_extendedprice\").sum().alias(\"total_price\"))"
+    },
+    {
+      "id": "AGG04",
+      "question": "Calculate total revenue per order. Revenue = unit_price * quantity * (1 - discount).",
+      "datasets": {
+        "nw_order_details": {
+          "file_name": "data/nw_order_details.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_order_details.with_columns((pl.col(\"unit_price\") * pl.col(\"quantity\") * (1 - pl.col(\"discount\"))).alias(\"revenue\")).group_by(\"order_id\").agg(pl.col(\"revenue\").sum().round(2).alias(\"total_revenue\"))"
+    },
+    {
+      "id": "AGG05",
+      "question": "Calculate the total and average payment amount per staff member.",
+      "datasets": {
+        "sk_payments": {
+          "file_name": "data/sk_payments.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_payments.group_by(\"staff_id\").agg(pl.col(\"amount\").sum().round(2).alias(\"total\"), pl.col(\"amount\").mean().round(2).alias(\"avg\"))"
+    },
+    {
+      "id": "AGG06",
+      "question": "TPC-H Q1: group by returnflag and linestatus, compute sum_qty, sum_price, avg_discount, count.",
+      "datasets": {
+        "tpch_lineitem": {
+          "file_name": "data/tpch_lineitem.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_lineitem.group_by(\"l_returnflag\", \"l_linestatus\").agg(pl.col(\"l_quantity\").sum().alias(\"sum_qty\"), pl.col(\"l_extendedprice\").sum().alias(\"sum_price\"), pl.col(\"l_discount\").mean().round(4).alias(\"avg_disc\"), pl.len().alias(\"count_order\")).sort(\"l_returnflag\", \"l_linestatus\")"
+    },
+    {
+      "id": "AGG07",
+      "question": "Count invoices and sum total per year. Extract year from invoice_date.",
+      "datasets": {
+        "ck_invoices": {
+          "file_name": "data/ck_invoices.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_invoices.with_columns(pl.col(\"invoice_date\").str.slice(0, 4).alias(\"year\")).group_by(\"year\").agg(pl.len().alias(\"invoice_count\"), pl.col(\"total\").sum().round(2).alias(\"total_sales\")).sort(\"year\")"
+    },
+    {
+      "id": "AGG08",
+      "question": "Find the product_id with the highest total revenue across all orders.",
+      "datasets": {
+        "nw_order_details": {
+          "file_name": "data/nw_order_details.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_order_details.with_columns((pl.col(\"unit_price\") * pl.col(\"quantity\") * (1 - pl.col(\"discount\"))).alias(\"revenue\")).group_by(\"product_id\").agg(pl.col(\"revenue\").sum().round(2).alias(\"total_revenue\")).sort(\"total_revenue\", descending=True).head(1)"
+    },
+    {
+      "id": "AGG09",
+      "question": "Count rentals per month (YYYY-MM). Extract from rental_date.",
+      "datasets": {
+        "sk_rentals": {
+          "file_name": "data/sk_rentals.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_rentals.with_columns(pl.col(\"rental_date\").str.slice(0, 7).alias(\"month\")).group_by(\"month\").agg(pl.len().alias(\"rental_count\")).sort(\"month\")"
+    },
+    {
+      "id": "AGG10",
+      "question": "Count orders per priority per order status.",
+      "datasets": {
+        "tpch_orders": {
+          "file_name": "data/tpch_orders.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_orders.group_by(\"o_orderpriority\", \"o_orderstatus\").agg(pl.len().alias(\"count\")).sort(\"o_orderpriority\", \"o_orderstatus\")"
+    },
+    {
+      "id": "AGG11",
+      "question": "Calculate total population and average life expectancy per continent.",
+      "datasets": {
+        "sp_world_country": {
+          "file_name": "data/sp_world_country.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_world_country.group_by(\"continent\").agg(pl.col(\"population\").sum().alias(\"total_pop\"), pl.col(\"life_expectancy\").mean().round(1).alias(\"avg_life_exp\")).sort(\"total_pop\", descending=True)"
+    },
+    {
+      "id": "AGG12",
+      "question": "Calculate average mpg per number of cylinders.",
+      "datasets": {
+        "sp_car_data": {
+          "file_name": "data/sp_car_data.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_car_data.group_by(\"cylinders\").agg(pl.col(\"mpg\").mean().round(1).alias(\"avg_mpg\")).sort(\"cylinders\")"
+    },
+    {
+      "id": "AGG13",
+      "question": "Count orders per customer, then compute min, max, avg of that count (order frequency stats).",
+      "datasets": {
+        "nw_orders": {
+          "file_name": "data/nw_orders.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_orders.group_by(\"customer_id\").agg(pl.len().alias(\"n_orders\")).select(pl.col(\"n_orders\").min().alias(\"min_orders\"), pl.col(\"n_orders\").max().alias(\"max_orders\"), pl.col(\"n_orders\").mean().round(1).alias(\"avg_orders\"))"
+    },
+    {
+      "id": "AGG14",
+      "question": "Calculate total file size in GB (sum of bytes / 1e9) per genre_id.",
+      "datasets": {
+        "ck_tracks": {
+          "file_name": "data/ck_tracks.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_tracks.group_by(\"genre_id\").agg((pl.col(\"bytes\").sum() / 1e9).round(2).alias(\"total_gb\"))"
+    },
+    {
+      "id": "AGG15",
+      "question": "Calculate the average replacement_cost per rating, and the percentage of total films each rating represents.",
+      "datasets": {
+        "sk_films": {
+          "file_name": "data/sk_films.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_films.group_by(\"rating\").agg(pl.col(\"replacement_cost\").mean().round(2).alias(\"avg_replacement_cost\"), (pl.len().cast(pl.Float64) / sk_films.height * 100).round(1).alias(\"pct_of_total\"))"
+    }
+  ]
+}

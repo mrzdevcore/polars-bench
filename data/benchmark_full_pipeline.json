@@ -1,0 +1,329 @@
+{
+  "questions": [
+    {
+      "id": "PIP01",
+      "question": "Top 5 customers by total spending on Seafood products. Full chain: order_details → products → categories (filter Seafood) → orders → customers.",
+      "datasets": {
+        "nw_order_details": {
+          "file_name": "data/nw_order_details.parquet",
+          "format": "parquet"
+        },
+        "nw_products": {
+          "file_name": "data/nw_products.parquet",
+          "format": "parquet"
+        },
+        "nw_categories": {
+          "file_name": "data/nw_categories.parquet",
+          "format": "parquet"
+        },
+        "nw_orders": {
+          "file_name": "data/nw_orders.parquet",
+          "format": "parquet"
+        },
+        "nw_customers": {
+          "file_name": "data/nw_customers.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_order_details.join(nw_products, on=\"product_id\").join(nw_categories, on=\"category_id\").filter(pl.col(\"category_name\") == \"Seafood\").with_columns((pl.col(\"unit_price\") * pl.col(\"quantity\") * (1 - pl.col(\"discount\"))).alias(\"revenue\")).group_by(\"order_id\").agg(pl.col(\"revenue\").sum().alias(\"order_rev\")).join(nw_orders, on=\"order_id\").group_by(\"customer_id\").agg(pl.col(\"order_rev\").sum().round(2).alias(\"total_spent\")).sort(\"total_spent\", descending=True).head(5).join(nw_customers, on=\"customer_id\").select(\"company_name\", \"country\", \"total_spent\")"
+    },
+    {
+      "id": "PIP02",
+      "question": "TPC-H Q5: total revenue per European nation. Revenue = l_extendedprice * (1 - l_discount). Full chain: lineitem → orders → customer → nation → region (filter EUROPE).",
+      "datasets": {
+        "tpch_lineitem": {
+          "file_name": "data/tpch_lineitem.parquet",
+          "format": "parquet"
+        },
+        "tpch_orders": {
+          "file_name": "data/tpch_orders.parquet",
+          "format": "parquet"
+        },
+        "tpch_customer": {
+          "file_name": "data/tpch_customer.parquet",
+          "format": "parquet"
+        },
+        "tpch_nation": {
+          "file_name": "data/tpch_nation.parquet",
+          "format": "parquet"
+        },
+        "tpch_region": {
+          "file_name": "data/tpch_region.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_lineitem.with_columns((pl.col(\"l_extendedprice\") * (1 - pl.col(\"l_discount\"))).alias(\"revenue\")).join(tpch_orders, left_on=\"l_orderkey\", right_on=\"o_orderkey\").join(tpch_customer, left_on=\"o_custkey\", right_on=\"c_custkey\").join(tpch_nation, left_on=\"c_nationkey\", right_on=\"n_nationkey\").join(tpch_region, left_on=\"n_regionkey\", right_on=\"r_regionkey\").filter(pl.col(\"r_name\") == \"EUROPE\").group_by(\"n_name\").agg(pl.col(\"revenue\").sum().round(2).alias(\"total_revenue\")).sort(\"total_revenue\", descending=True)"
+    },
+    {
+      "id": "PIP03",
+      "question": "Find the most rented film category. Chain: rentals → inventory → films → film_category → categories. Count rentals per category.",
+      "datasets": {
+        "sk_rentals": {
+          "file_name": "data/sk_rentals.parquet",
+          "format": "parquet"
+        },
+        "sk_inventory": {
+          "file_name": "data/sk_inventory.parquet",
+          "format": "parquet"
+        },
+        "sk_films": {
+          "file_name": "data/sk_films.parquet",
+          "format": "parquet"
+        },
+        "sk_film_category": {
+          "file_name": "data/sk_film_category.parquet",
+          "format": "parquet"
+        },
+        "sk_categories": {
+          "file_name": "data/sk_categories.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_rentals.join(sk_inventory, on=\"inventory_id\").join(sk_films, on=\"film_id\").join(sk_film_category, on=\"film_id\").join(sk_categories, on=\"category_id\").group_by(\"name\").agg(pl.len().alias(\"rental_count\")).sort(\"rental_count\", descending=True).head(1)"
+    },
+    {
+      "id": "PIP04",
+      "question": "Find the sales support rep with the highest total revenue. Chain: invoice_lines (revenue) → invoices → customers → employees.",
+      "datasets": {
+        "ck_invoice_lines": {
+          "file_name": "data/ck_invoice_lines.parquet",
+          "format": "parquet"
+        },
+        "ck_invoices": {
+          "file_name": "data/ck_invoices.parquet",
+          "format": "parquet"
+        },
+        "ck_customers": {
+          "file_name": "data/ck_customers.parquet",
+          "format": "parquet"
+        },
+        "ck_employees": {
+          "file_name": "data/ck_employees.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_invoice_lines.with_columns((pl.col(\"unit_price\") * pl.col(\"quantity\")).alias(\"line_rev\")).join(ck_invoices, on=\"invoice_id\").join(ck_customers, on=\"customer_id\").join(ck_employees, left_on=\"support_rep_id\", right_on=\"employee_id\").group_by(\"first_name\", \"last_name\").agg(pl.col(\"line_rev\").sum().round(2).alias(\"total_rev\")).sort(\"total_rev\", descending=True).head(1)"
+    },
+    {
+      "id": "PIP05",
+      "question": "Month-over-month revenue growth for 2024. Compute monthly revenue from order_details + orders, then calculate growth %.",
+      "datasets": {
+        "nw_orders": {
+          "file_name": "data/nw_orders.parquet",
+          "format": "parquet"
+        },
+        "nw_order_details": {
+          "file_name": "data/nw_order_details.parquet",
+          "format": "parquet"
+        },
+        "nw_products": {
+          "file_name": "data/nw_products.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_order_details.with_columns((pl.col(\"unit_price\") * pl.col(\"quantity\") * (1 - pl.col(\"discount\"))).alias(\"revenue\")).join(nw_orders, on=\"order_id\").filter(pl.col(\"order_date\").str.starts_with(\"2024\")).with_columns(pl.col(\"order_date\").str.slice(0, 7).alias(\"month\")).group_by(\"month\").agg(pl.col(\"revenue\").sum().round(2).alias(\"monthly_rev\")).sort(\"month\").with_columns(((pl.col(\"monthly_rev\") - pl.col(\"monthly_rev\").shift(1)) / pl.col(\"monthly_rev\").shift(1) * 100).round(1).alias(\"growth_pct\"))"
+    },
+    {
+      "id": "PIP06",
+      "question": "Find the top 3 nations by total supply value for STANDARD parts. Chain: lineitem → part (filter type contains STANDARD) + supplier → nation. Value = l_extendedprice.",
+      "datasets": {
+        "tpch_lineitem": {
+          "file_name": "data/tpch_lineitem.parquet",
+          "format": "parquet"
+        },
+        "tpch_part": {
+          "file_name": "data/tpch_part.parquet",
+          "format": "parquet"
+        },
+        "tpch_supplier": {
+          "file_name": "data/tpch_supplier.parquet",
+          "format": "parquet"
+        },
+        "tpch_nation": {
+          "file_name": "data/tpch_nation.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_lineitem.join(tpch_part, left_on=\"l_partkey\", right_on=\"p_partkey\").filter(pl.col(\"p_type\").str.contains(\"STANDARD\")).join(tpch_supplier, left_on=\"l_suppkey\", right_on=\"s_suppkey\").join(tpch_nation, left_on=\"s_nationkey\", right_on=\"n_nationkey\").group_by(\"n_name\").agg(pl.col(\"l_extendedprice\").sum().round(2).alias(\"total_value\")).sort(\"total_value\", descending=True).head(3)"
+    },
+    {
+      "id": "PIP07",
+      "question": "Total revenue per country. 5-table chain: payments → customers → addresses → cities → countries. Sum amount per country.",
+      "datasets": {
+        "sk_payments": {
+          "file_name": "data/sk_payments.parquet",
+          "format": "parquet"
+        },
+        "sk_customers": {
+          "file_name": "data/sk_customers.parquet",
+          "format": "parquet"
+        },
+        "sk_addresses": {
+          "file_name": "data/sk_addresses.parquet",
+          "format": "parquet"
+        },
+        "sk_cities": {
+          "file_name": "data/sk_cities.parquet",
+          "format": "parquet"
+        },
+        "sk_countries": {
+          "file_name": "data/sk_countries.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_payments.join(sk_customers, on=\"customer_id\").join(sk_addresses, on=\"address_id\").join(sk_cities, on=\"city_id\").join(sk_countries, on=\"country_id\").group_by(\"country\").agg(pl.col(\"amount\").sum().round(2).alias(\"total_revenue\")).sort(\"total_revenue\", descending=True)"
+    },
+    {
+      "id": "PIP08",
+      "question": "RFM for Northwind: per customer, compute Recency (days since last order from 2025-01-01), Frequency (order count), Monetary (total revenue). Sort by Monetary desc.",
+      "datasets": {
+        "nw_order_details": {
+          "file_name": "data/nw_order_details.parquet",
+          "format": "parquet"
+        },
+        "nw_orders": {
+          "file_name": "data/nw_orders.parquet",
+          "format": "parquet"
+        },
+        "nw_customers": {
+          "file_name": "data/nw_customers.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_order_details.with_columns((pl.col(\"unit_price\") * pl.col(\"quantity\") * (1 - pl.col(\"discount\"))).alias(\"revenue\")).group_by(\"order_id\").agg(pl.col(\"revenue\").sum().alias(\"order_rev\")).join(nw_orders, on=\"order_id\").with_columns(pl.col(\"order_date\").str.to_date().alias(\"date\")).group_by(\"customer_id\").agg(((pl.lit(\"2025-01-01\").str.to_date() - pl.col(\"date\").max()).dt.total_days()).alias(\"recency\"), pl.col(\"order_id\").n_unique().alias(\"frequency\"), pl.col(\"order_rev\").sum().round(2).alias(\"monetary\")).sort(\"monetary\", descending=True)"
+    },
+    {
+      "id": "PIP09",
+      "question": "For each artist, find their most common genre. Chain: tracks → albums → artists + genres. Group, count, pick top per artist.",
+      "datasets": {
+        "ck_tracks": {
+          "file_name": "data/ck_tracks.parquet",
+          "format": "parquet"
+        },
+        "ck_albums": {
+          "file_name": "data/ck_albums.parquet",
+          "format": "parquet"
+        },
+        "ck_artists": {
+          "file_name": "data/ck_artists.parquet",
+          "format": "parquet"
+        },
+        "ck_genres": {
+          "file_name": "data/ck_genres.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_tracks.join(ck_albums, on=\"album_id\").join(ck_artists.rename({\"name\": \"artist_name\"}), on=\"artist_id\").join(ck_genres.rename({\"name\": \"genre_name\"}), on=\"genre_id\").group_by(\"artist_name\", \"genre_name\").agg(pl.len().alias(\"count\")).sort(\"count\", descending=True).group_by(\"artist_name\").agg(pl.col(\"genre_name\").first().alias(\"top_genre\"), pl.col(\"count\").first().alias(\"track_count\"))"
+    },
+    {
+      "id": "PIP10",
+      "question": "For each continent, find the country with the most cities, its most spoken language, and total population. Multi-agg pipeline.",
+      "datasets": {
+        "sp_world_country": {
+          "file_name": "data/sp_world_country.parquet",
+          "format": "parquet"
+        },
+        "sp_world_city": {
+          "file_name": "data/sp_world_city.parquet",
+          "format": "parquet"
+        },
+        "sp_world_language": {
+          "file_name": "data/sp_world_language.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_world_city.group_by(\"country_code\").agg(pl.len().alias(\"n_cities\")).join(sp_world_country, left_on=\"country_code\", right_on=\"code\").sort(\"n_cities\", descending=True).group_by(\"continent\").agg(pl.col(\"name\").first().alias(\"country_most_cities\"), pl.col(\"n_cities\").first().alias(\"city_count\"), pl.col(\"population\").sum().alias(\"continent_pop\"))"
+    },
+    {
+      "id": "PIP11",
+      "question": "Find the top 5 actor pairs who have appeared together in the most films. Self-join on film_actor.",
+      "datasets": {
+        "sk_films": {
+          "file_name": "data/sk_films.parquet",
+          "format": "parquet"
+        },
+        "sk_film_actor": {
+          "file_name": "data/sk_film_actor.parquet",
+          "format": "parquet"
+        },
+        "sk_actors": {
+          "file_name": "data/sk_actors.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_film_actor.join(sk_film_actor, on=\"film_id\", suffix=\"_b\").filter(pl.col(\"actor_id\") < pl.col(\"actor_id_b\")).group_by(\"actor_id\", \"actor_id_b\").agg(pl.len().alias(\"films_together\")).sort(\"films_together\", descending=True).head(5)"
+    },
+    {
+      "id": "PIP12",
+      "question": "For each order, compute total revenue, line count, avg discount. Then classify: 'high_value' if revenue > 10000, 'medium' if > 1000, else 'low'.",
+      "datasets": {
+        "tpch_lineitem": {
+          "file_name": "data/tpch_lineitem.parquet",
+          "format": "parquet"
+        },
+        "tpch_orders": {
+          "file_name": "data/tpch_orders.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_lineitem.with_columns((pl.col(\"l_extendedprice\") * (1 - pl.col(\"l_discount\"))).alias(\"revenue\")).group_by(\"l_orderkey\").agg(pl.col(\"revenue\").sum().round(2).alias(\"total_rev\"), pl.len().alias(\"n_lines\"), pl.col(\"l_discount\").mean().round(3).alias(\"avg_disc\")).with_columns(pl.when(pl.col(\"total_rev\") > 10000).then(pl.lit(\"high_value\")).when(pl.col(\"total_rev\") > 1000).then(pl.lit(\"medium\")).otherwise(pl.lit(\"low\")).alias(\"value_class\"))"
+    },
+    {
+      "id": "PIP13",
+      "question": "For each country of supplier, compute the average product price per category. Pivot: rows=country, columns=category_name, values=avg price.",
+      "datasets": {
+        "nw_products": {
+          "file_name": "data/nw_products.parquet",
+          "format": "parquet"
+        },
+        "nw_suppliers": {
+          "file_name": "data/nw_suppliers.parquet",
+          "format": "parquet"
+        },
+        "nw_categories": {
+          "file_name": "data/nw_categories.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_products.join(nw_suppliers, on=\"supplier_id\").join(nw_categories, on=\"category_id\").group_by(\"country\", \"category_name\").agg(pl.col(\"unit_price\").mean().round(2).alias(\"avg_price\")).pivot(on=\"category_name\", index=\"country\", values=\"avg_price\").fill_null(0)"
+    },
+    {
+      "id": "PIP14",
+      "question": "Find artists whose average track duration exceeds 5 minutes (300000ms) and who have more than 10 tracks. Return artist name, track count, avg_duration_min.",
+      "datasets": {
+        "ck_tracks": {
+          "file_name": "data/ck_tracks.parquet",
+          "format": "parquet"
+        },
+        "ck_albums": {
+          "file_name": "data/ck_albums.parquet",
+          "format": "parquet"
+        },
+        "ck_artists": {
+          "file_name": "data/ck_artists.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_tracks.join(ck_albums, on=\"album_id\").join(ck_artists, on=\"artist_id\").group_by(pl.col(\"name_right\").alias(\"artist\")).agg(pl.len().alias(\"track_count\"), (pl.col(\"milliseconds\").mean() / 60000).round(2).alias(\"avg_duration_min\")).filter((pl.col(\"avg_duration_min\") > 5) & (pl.col(\"track_count\") > 10)).sort(\"avg_duration_min\", descending=True)"
+    },
+    {
+      "id": "PIP15",
+      "question": "For each country of origin (airline country), find the number of distinct destination countries served. Chain: route → airline + airport (dst). Count distinct dst countries.",
+      "datasets": {
+        "sp_route": {
+          "file_name": "data/sp_route.parquet",
+          "format": "parquet"
+        },
+        "sp_airline": {
+          "file_name": "data/sp_airline.parquet",
+          "format": "parquet"
+        },
+        "sp_airport": {
+          "file_name": "data/sp_airport.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_route.join(sp_airline, on=\"airline_id\").join(sp_airport, left_on=\"dst_airport_id\", right_on=\"airport_id\", suffix=\"_dst\").group_by(pl.col(\"country\").alias(\"airline_country\")).agg(pl.col(\"country_dst\").n_unique().alias(\"destinations_countries\")).sort(\"destinations_countries\", descending=True)"
+    }
+  ]
+}

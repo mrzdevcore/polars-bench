@@ -1,0 +1,257 @@
+{
+  "questions": [
+    {
+      "id": "JOI01",
+      "question": "Join products with categories to get category_name for each product.",
+      "datasets": {
+        "nw_products": {
+          "file_name": "data/nw_products.parquet",
+          "format": "parquet"
+        },
+        "nw_categories": {
+          "file_name": "data/nw_categories.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_products.join(nw_categories, on=\"category_id\").select(\"product_name\", \"category_name\", \"unit_price\")"
+    },
+    {
+      "id": "JOI02",
+      "question": "Join tracks with genres to get genre name for each track.",
+      "datasets": {
+        "ck_tracks": {
+          "file_name": "data/ck_tracks.parquet",
+          "format": "parquet"
+        },
+        "ck_genres": {
+          "file_name": "data/ck_genres.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_tracks.join(ck_genres, on=\"genre_id\").select(\"name\", pl.col(\"name_right\").alias(\"genre_name\"))"
+    },
+    {
+      "id": "JOI03",
+      "question": "Join suppliers with nations to get nation name for each supplier.",
+      "datasets": {
+        "tpch_supplier": {
+          "file_name": "data/tpch_supplier.parquet",
+          "format": "parquet"
+        },
+        "tpch_nation": {
+          "file_name": "data/tpch_nation.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_supplier.join(tpch_nation, left_on=\"s_nationkey\", right_on=\"n_nationkey\").select(\"s_name\", \"n_name\", \"s_acctbal\")"
+    },
+    {
+      "id": "JOI04",
+      "question": "Find all orders placed by customers in Germany. Return order_id, company_name, order_date.",
+      "datasets": {
+        "nw_orders": {
+          "file_name": "data/nw_orders.parquet",
+          "format": "parquet"
+        },
+        "nw_customers": {
+          "file_name": "data/nw_customers.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_orders.join(nw_customers, on=\"customer_id\").filter(pl.col(\"country\") == \"Germany\").select(\"order_id\", \"company_name\", \"order_date\")"
+    },
+    {
+      "id": "JOI05",
+      "question": "Join films → film_category → categories. Select title, category name, rating.",
+      "datasets": {
+        "sk_films": {
+          "file_name": "data/sk_films.parquet",
+          "format": "parquet"
+        },
+        "sk_film_category": {
+          "file_name": "data/sk_film_category.parquet",
+          "format": "parquet"
+        },
+        "sk_categories": {
+          "file_name": "data/sk_categories.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_films.join(sk_film_category, on=\"film_id\").join(sk_categories, on=\"category_id\").select(\"title\", \"name\", \"rating\")"
+    },
+    {
+      "id": "JOI06",
+      "question": "List all performances with singer name and concert name.",
+      "datasets": {
+        "sp_performance": {
+          "file_name": "data/sp_performance.parquet",
+          "format": "parquet"
+        },
+        "sp_singer": {
+          "file_name": "data/sp_singer.parquet",
+          "format": "parquet"
+        },
+        "sp_concert": {
+          "file_name": "data/sp_concert.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_performance.join(sp_singer, on=\"singer_id\").join(sp_concert, on=\"concert_id\").select(pl.col(\"name\").alias(\"singer_name\"), \"concert_name\", \"year\")"
+    },
+    {
+      "id": "JOI07",
+      "question": "Anti join: find customers who have never placed an order.",
+      "datasets": {
+        "nw_customers": {
+          "file_name": "data/nw_customers.parquet",
+          "format": "parquet"
+        },
+        "nw_orders": {
+          "file_name": "data/nw_orders.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_customers.join(nw_orders, on=\"customer_id\", how=\"anti\")"
+    },
+    {
+      "id": "JOI08",
+      "question": "Anti join: find singers who have never performed at any concert.",
+      "datasets": {
+        "sp_singer": {
+          "file_name": "data/sp_singer.parquet",
+          "format": "parquet"
+        },
+        "sp_performance": {
+          "file_name": "data/sp_performance.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_singer.join(sp_performance, on=\"singer_id\", how=\"anti\")"
+    },
+    {
+      "id": "JOI09",
+      "question": "Calculate total revenue per category. Join order_details → products → categories.",
+      "datasets": {
+        "nw_order_details": {
+          "file_name": "data/nw_order_details.parquet",
+          "format": "parquet"
+        },
+        "nw_products": {
+          "file_name": "data/nw_products.parquet",
+          "format": "parquet"
+        },
+        "nw_categories": {
+          "file_name": "data/nw_categories.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_order_details.join(nw_products, on=\"product_id\").join(nw_categories, on=\"category_id\").with_columns((pl.col(\"unit_price\") * pl.col(\"quantity\") * (1 - pl.col(\"discount\"))).alias(\"revenue\")).group_by(\"category_name\").agg(pl.col(\"revenue\").sum().round(2).alias(\"total_revenue\")).sort(\"total_revenue\", descending=True)"
+    },
+    {
+      "id": "JOI10",
+      "question": "Total order value per nation. Join orders → customer → nation.",
+      "datasets": {
+        "tpch_orders": {
+          "file_name": "data/tpch_orders.parquet",
+          "format": "parquet"
+        },
+        "tpch_customer": {
+          "file_name": "data/tpch_customer.parquet",
+          "format": "parquet"
+        },
+        "tpch_nation": {
+          "file_name": "data/tpch_nation.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = tpch_orders.join(tpch_customer, left_on=\"o_custkey\", right_on=\"c_custkey\").join(tpch_nation, left_on=\"c_nationkey\", right_on=\"n_nationkey\").group_by(\"n_name\").agg(pl.col(\"o_totalprice\").sum().round(2).alias(\"total_value\")).sort(\"total_value\", descending=True)"
+    },
+    {
+      "id": "JOI11",
+      "question": "Find the most rented film. Join rentals → inventory → films.",
+      "datasets": {
+        "sk_rentals": {
+          "file_name": "data/sk_rentals.parquet",
+          "format": "parquet"
+        },
+        "sk_inventory": {
+          "file_name": "data/sk_inventory.parquet",
+          "format": "parquet"
+        },
+        "sk_films": {
+          "file_name": "data/sk_films.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_rentals.join(sk_inventory, on=\"inventory_id\").group_by(\"film_id\").agg(pl.len().alias(\"rental_count\")).sort(\"rental_count\", descending=True).head(1).join(sk_films, on=\"film_id\").select(\"title\", \"rental_count\")"
+    },
+    {
+      "id": "JOI12",
+      "question": "4-table join: list customers with their country. Join customers → addresses → cities → countries.",
+      "datasets": {
+        "sk_customers": {
+          "file_name": "data/sk_customers.parquet",
+          "format": "parquet"
+        },
+        "sk_addresses": {
+          "file_name": "data/sk_addresses.parquet",
+          "format": "parquet"
+        },
+        "sk_cities": {
+          "file_name": "data/sk_cities.parquet",
+          "format": "parquet"
+        },
+        "sk_countries": {
+          "file_name": "data/sk_countries.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sk_customers.join(sk_addresses, on=\"address_id\").join(sk_cities, on=\"city_id\").join(sk_countries, on=\"country_id\").select(\"first_name\", \"last_name\", \"country\")"
+    },
+    {
+      "id": "JOI13",
+      "question": "Find the most purchased genre. Join invoice_lines → tracks → genres. Sum quantity per genre.",
+      "datasets": {
+        "ck_invoice_lines": {
+          "file_name": "data/ck_invoice_lines.parquet",
+          "format": "parquet"
+        },
+        "ck_tracks": {
+          "file_name": "data/ck_tracks.parquet",
+          "format": "parquet"
+        },
+        "ck_genres": {
+          "file_name": "data/ck_genres.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = ck_invoice_lines.join(ck_tracks, on=\"track_id\").join(ck_genres, on=\"genre_id\").group_by(pl.col(\"name_right\").alias(\"genre\")).agg(pl.col(\"quantity\").sum().alias(\"total_purchased\")).sort(\"total_purchased\", descending=True).head(1)"
+    },
+    {
+      "id": "JOI14",
+      "question": "Self-join: show each employee with their manager's name.",
+      "datasets": {
+        "nw_employees": {
+          "file_name": "data/nw_employees.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = nw_employees.filter(pl.col(\"reports_to\").is_not_null()).join(nw_employees, left_on=\"reports_to\", right_on=\"employee_id\", suffix=\"_mgr\").select(pl.col(\"first_name\"), pl.col(\"last_name\"), pl.col(\"first_name_mgr\").alias(\"manager_first\"), pl.col(\"last_name_mgr\").alias(\"manager_last\"))"
+    },
+    {
+      "id": "JOI15",
+      "question": "Find direct routes from Paris CDG. Double join on airports for source and destination names.",
+      "datasets": {
+        "sp_route": {
+          "file_name": "data/sp_route.parquet",
+          "format": "parquet"
+        },
+        "sp_airport": {
+          "file_name": "data/sp_airport.parquet",
+          "format": "parquet"
+        }
+      },
+      "gold_code": "result = sp_route.filter(pl.col(\"stops\") == 0).join(sp_airport, left_on=\"src_airport_id\", right_on=\"airport_id\").filter(pl.col(\"iata\") == \"CDG\").join(sp_airport, left_on=\"dst_airport_id\", right_on=\"airport_id\", suffix=\"_dst\").select(\"airline_id\", pl.col(\"airport_name_dst\").alias(\"destination\"))"
+    }
+  ]
+}
