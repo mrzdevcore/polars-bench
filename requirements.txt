@@ -1,10 +1,6 @@
-fastapi
-torch
-transformers
-uvicorn
-accelerate
 accelerate
 fastapi
+polars
 pydantic
 torch
 transformers
